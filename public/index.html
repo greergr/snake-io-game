@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake.io Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for modern UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Login Overlay -->
+    <div id="login-screen" class="overlay">
+        <div class="login-box">
+            <h1>SNAKE.IO</h1>
+            <input type="text" id="nickname" placeholder="NickName" maxlength="15" autocomplete="off">
+            <div class="color-picker">
+                <div class="color-btn" style="background:var(--neon-green);" data-color="#39ff14"></div>
+                <div class="color-btn" style="background:var(--neon-blue);" data-color="#0ff"></div>
+                <div class="color-btn" style="background:var(--neon-pink);" data-color="#ff00ff"></div>
+                <div class="color-btn" style="background:var(--neon-orange);" data-color="#ff9900"></div>
+                <div class="color-btn" style="background:var(--neon-yellow);" data-color="#ccff00"></div>
+                <div class="color-btn" style="background:var(--neon-purple);" data-color="#9d00ff"></div>
+            </div>
+            <button id="play-btn">PLAY</button>
+        </div>
+    </div>
+
+    <!-- Main Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- In-Game UI -->
+    <div id="hud" style="display: none;">
+        <!-- Kill Feed on the left -->
+        <div id="kill-feed"></div>
+
+        <div id="leaderboard">
+            <h3>Top Players</h3>
+            <ul id="leaderboard-list"></ul>
+        </div>
+
+        <div id="score-display">Score: <span id="my-score">10</span></div>
+
+        <div id="right-bottom-container">
+            <!-- Minimap -->
+            <canvas id="minimap"></canvas>
+
+            <!-- Boost Meter -->
+            <div id="boost-meter">
+                <div id="boost-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Death Text overlay -->
+    <div id="death-screen" class="overlay" style="display: none;">
+        <div class="death-box">
+            <h1 class="glitch" data-text="WASTED">WASTED</h1>
+            <h2>Final Score: <span id="final-score"></span></h2>
+            <button id="respawn-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
