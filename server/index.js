@@ -35,7 +35,8 @@ io.on('connection', (socket) => {
     });
 });
 
-// Broadcast game state to all players at 30 fps (approx 33ms)
+// Broadcast game state to all players at 20 fps (approx 50ms)
+// Lowering tick rate to 20 to prevent Render.com Free Tier CPU lag
 setInterval(() => {
     game.update();
     const fullState = game.getState();
@@ -74,7 +75,7 @@ setInterval(() => {
     }
 
     io.volatile.emit('gameState', netState);
-}, 1000 / 30);
+}, 1000 / 20);
 
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

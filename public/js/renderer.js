@@ -47,16 +47,11 @@ class Renderer {
         // Boundary glow
         this.ctx.strokeStyle = '#ff0055';
         this.ctx.lineWidth = 10;
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = '#ff0055';
         this.ctx.strokeRect(0, 0, this.gridSize, this.gridSize);
-        this.ctx.shadowBlur = 0;
 
         // Inner Grid - Hexagon/Tech look
-        this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)'; // Neon cyan grid
+        this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'; // Neon cyan grid
         this.ctx.lineWidth = 1.5;
-        this.ctx.shadowBlur = 5;
-        this.ctx.shadowColor = 'rgba(0, 255, 255, 0.5)';
 
         const startX = Math.max(0, Math.floor(this.camera.x / (this.cellSize * this.camera.zoom)) * this.cellSize);
         const endX = Math.min(this.gridSize, Math.ceil((this.camera.x + this.canvas.width) / (this.cellSize * this.camera.zoom)) * this.cellSize);
@@ -74,7 +69,6 @@ class Renderer {
             this.ctx.lineTo(endX, y);
         }
         this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
 
         this.ctx.restore();
     }
@@ -101,10 +95,7 @@ class Renderer {
                 const size = f.value * 2 + 2;
                 this.ctx.arc(f.x, f.y, size, 0, Math.PI * 2);
                 this.ctx.fillStyle = colors[f.value % colors.length];
-                this.ctx.shadowBlur = size * 2;
-                this.ctx.shadowColor = this.ctx.fillStyle;
                 this.ctx.fill();
-                this.ctx.shadowBlur = 0; // reset
             }
         });
 
@@ -140,10 +131,8 @@ class Renderer {
                 this.ctx.strokeStyle = p.color;
 
                 if (p.isBoosting) {
-                    this.ctx.shadowBlur = 15;
-                    this.ctx.shadowColor = p.color;
-                } else {
-                    this.ctx.shadowBlur = 0;
+                    this.ctx.lineWidth *= 1.2; // visual boost thickness instead of shadow
+                    this.ctx.strokeStyle = '#fff';
                 }
 
                 // Adjust opacity or color slightly for segmentation effect
@@ -151,7 +140,6 @@ class Renderer {
             }
 
             // Draw Head
-            this.ctx.shadowBlur = 0;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             this.ctx.fillStyle = p.color;
@@ -177,10 +165,11 @@ class Renderer {
             this.ctx.font = `bold ${Math.max(12, p.radius * 0.8)}px Outfit`;
             this.ctx.fillStyle = 'rgba(255,255,255,0.9)';
             this.ctx.textAlign = 'center';
-            this.ctx.shadowBlur = 5;
-            this.ctx.shadowColor = '#000';
+            // Dark text outline for readability instead of shadow
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            this.ctx.strokeText(p.name, p.x, p.y - p.radius - 15);
             this.ctx.fillText(p.name, p.x, p.y - p.radius - 15);
-            this.ctx.shadowBlur = 0;
 
             // Crown for Top Player
             if (p.isLeader) {
@@ -196,9 +185,10 @@ class Renderer {
                 this.ctx.lineTo(15, 0);
                 this.ctx.closePath();
                 this.ctx.fillStyle = '#ffd700'; // Gold
-                this.ctx.shadowBlur = 10;
-                this.ctx.shadowColor = '#ffd700';
                 this.ctx.fill();
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = '#000';
+                this.ctx.stroke();
                 this.ctx.restore();
             }
         });
