@@ -37,8 +37,36 @@ io.on('connection', (socket) => {
 // Broadcast game state to all players at 30 fps (approx 33ms)
 setInterval(() => {
     game.update();
-    const state = game.getState();
-    io.volatile.emit('gameState', state);
+    const fullState = game.getState();
+
+    // Create a compressed state to send over network
+    const netState = {
+        players: {},
+        food: fullState.food
+    };
+
+    // Only send essential fields to save bandwidth
+    for (const id in fullState.players) {
+        const p = fullState.players[id];
+        netState.players[id] = {
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            x: Math.round(p.x * 10) / 10,
+            y: Math.round(p.y * 10) / 10,
+            angle: Math.round(p.angle * 100) / 100,
+            score: Math.round(p.score),
+            radius: Math.round(p.radius * 10) / 10,
+            isBoosting: p.isBoosting,
+            isLeader: p.isLeader,
+            segments: p.segments.map(seg => ({
+                x: Math.round(seg.x * 10) / 10,
+                y: Math.round(seg.y * 10) / 10
+            }))
+        };
+    }
+
+    io.volatile.emit('gameState', netState);
 }, 1000 / 30);
 
 server.listen(PORT, () => {

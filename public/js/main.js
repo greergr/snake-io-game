@@ -21,9 +21,11 @@ const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
 let myId = null;
 let gameState = { players: {}, food: [] };
+let targetState = { players: {}, food: [] };
 let isPlaying = false;
 let selectedColor = '#39ff14'; // Default neon green
 let previousScore = 10;
+const LERP_FACTOR = 0.3; // Smoothing factor (0.1 - 0.5 is good)
 
 // Color Selection
 colorBtns.forEach(btn => {
@@ -68,13 +70,21 @@ socket.on('gameState', (state) => {
     // Play eat sound based on previous score diff
     if (isPlaying && myId && state.players[myId]) {
         const currentScore = Math.floor(state.players[myId].score);
-        const previousScore = gameState.players[myId] ? Math.floor(gameState.players[myId].score) : 10;
+        const previousScore = gameState.players && gameState.players[myId] ? Math.floor(gameState.players[myId].score) : 10;
         if (currentScore > previousScore) {
             if (window.audio) window.audio.playEat();
         }
     }
 
-    gameState = state;
+    // Prepare for interpolation
+    if (Object.keys(gameState.players).length === 0) {
+        gameState = JSON.parse(JSON.stringify(state)); // Full clone first time
+    }
+    targetState = state;
+
+    // Update food immediately since it doesn't lerp
+    gameState.food = state.food;
+
     updateUI();
 });
 
@@ -161,6 +171,63 @@ function drawMinimap() {
     }
 }
 
+// Linear interpolation function
+function lerp(start, end, amt) {
+    return (1 - amt) * start + amt * end;
+}
+
+// Function to smoothly interpolate game state towards target state
+function interpolateState() {
+    if (!targetState.players) return;
+
+    for (const id in targetState.players) {
+        const targetPlayer = targetState.players[id];
+
+        // If it's a new player, add them directly
+        if (!gameState.players[id]) {
+            gameState.players[id] = JSON.parse(JSON.stringify(targetPlayer));
+            continue;
+        }
+
+        const currentPlayer = gameState.players[id];
+
+        // Lerp Head Position
+        currentPlayer.x = lerp(currentPlayer.x, targetPlayer.x, LERP_FACTOR);
+        currentPlayer.y = lerp(currentPlayer.y, targetPlayer.y, LERP_FACTOR);
+
+        // Interpolate angle (handle wraparound logic)
+        let diff = targetPlayer.angle - currentPlayer.angle;
+        if (diff > Math.PI) diff -= Math.PI * 2;
+        if (diff < -Math.PI) diff += Math.PI * 2;
+        currentPlayer.angle += diff * LERP_FACTOR;
+
+        currentPlayer.radius = targetPlayer.radius;
+        currentPlayer.score = targetPlayer.score;
+        currentPlayer.isBoosting = targetPlayer.isBoosting;
+        currentPlayer.isLeader = targetPlayer.isLeader;
+
+        // Update Segments
+        // Since segments change count and position abruptly from server, 
+        // we snap the segments directly for simplicity, or we can lerp them too.
+        // For performance & stability: Snap segments
+        if (targetPlayer.segments.length !== currentPlayer.segments.length) {
+            currentPlayer.segments = JSON.parse(JSON.stringify(targetPlayer.segments));
+        } else {
+            for (let i = 0; i < targetPlayer.segments.length; i++) {
+                currentPlayer.segments[i].x = lerp(currentPlayer.segments[i].x, targetPlayer.segments[i].x, LERP_FACTOR);
+                currentPlayer.segments[i].y = lerp(currentPlayer.segments[i].y, targetPlayer.segments[i].y, LERP_FACTOR);
+            }
+        }
+    }
+
+    // Remove disconnected/dead players from gameState interpolator
+    for (const id in gameState.players) {
+        if (!targetState.players[id]) {
+            delete gameState.players[id];
+        }
+    }
+}
+
 // Main Game Loop running on RAF (60+ fps)
 function gameLoop() {
     if (isPlaying) {
@@ -171,7 +238,9 @@ function gameLoop() {
         });
     }
 
-    // Render using latest state
+    interpolateState();
+
+    // Render using interpolated state
     renderer.render(gameState, myId);
 
     requestAnimationFrame(gameLoop);

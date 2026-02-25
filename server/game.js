@@ -142,33 +142,43 @@ class Game {
 
         // Detailed Player-Player Collision Loop
         const deadPlayers = [];
-        for (const id1 in this.players) {
+        const playerKeys = Object.keys(this.players);
+
+        for (let i = 0; i < playerKeys.length; i++) {
+            const id1 = playerKeys[i];
             const p1 = this.players[id1];
-            for (const id2 in this.players) {
-                if (id1 !== id2) {
-                    const p2 = this.players[id2];
-                    // Check p1 head against p2 segments
-                    for (let i = 0; i < p2.segments.length; i++) {
-                        // Skip the first few segments to avoid immediate head-to-head issues
-                        if (i < 5 && Math.hypot(p1.x - p2.x, p1.y - p2.y) < (p1.radius + p2.radius)) {
-                            // Head to head collision: smaller snake dies
-                            if (p1.score < p2.score) {
-                                deadPlayers.push({ victimId: id1, killerId: id2 });
-                                break;
-                            }
-                        } else {
-                            const seg = p2.segments[i];
-                            const dist = Math.hypot(p1.x - seg.x, p1.y - seg.y);
-                            // Relax collision slightly for feel
-                            if (dist < p1.radius + p2.radius * 0.5) {
-                                deadPlayers.push({ victimId: id1, killerId: id2 });
-                                break;
-                            }
+
+            for (let j = 0; j < playerKeys.length; j++) {
+                if (i === j) continue;
+
+                const id2 = playerKeys[j];
+                const p2 = this.players[id2];
+
+                // Broad phase check (AABB roughly)
+                if (Math.abs(p1.x - p2.x) > p1.radius + p2.radius + p2.score + 50) continue;
+                if (Math.abs(p1.y - p2.y) > p1.radius + p2.radius + p2.score + 50) continue;
+
+                // Check p1 head against p2 segments
+                for (let k = 0; k < p2.segments.length; k++) {
+                    // Skip the first few segments to avoid immediate head-to-head issues
+                    if (k < 5 && Math.hypot(p1.x - p2.x, p1.y - p2.y) < (p1.radius + p2.radius)) {
+                        // Head to head collision: smaller snake dies
+                        if (p1.score < p2.score) {
+                            deadPlayers.push({ victimId: id1, killerId: id2 });
+                            break;
+                        }
+                    } else {
+                        const seg = p2.segments[k];
+                        const dist = Math.hypot(p1.x - seg.x, p1.y - seg.y);
+                        // Relax collision slightly for feel
+                        if (dist < p1.radius + p2.radius * 0.5) {
+                            deadPlayers.push({ victimId: id1, killerId: id2 });
+                            break;
                         }
                     }
                 }
-            }
-        }
+            } // end loop j
+        } // end loop i
 
         // Process deaths
         deadPlayers.forEach(killInfo => {
