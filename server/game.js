@@ -3,6 +3,8 @@ class Game {
         this.io = io; // Added to emit global events directly if needed
         this.players = {};
         this.food = [];
+        this.eatenFoodIds = [];
+        this.newFoodBoxes = [];
         this.gridSize = { width: 3000, height: 3000 };
         this.generateInitialFood(500);
     }
@@ -14,12 +16,15 @@ class Game {
     }
 
     addFood() {
-        this.food.push({
-            id: Math.random().toString(36).substring(2, 9),
+        const id = Math.random().toString(36).substring(2, 9);
+        const f = {
+            id,
             x: Math.floor(Math.random() * this.gridSize.width),
             y: Math.floor(Math.random() * this.gridSize.height),
             value: Math.floor(Math.random() * 5) + 1 // Random color/value
-        });
+        };
+        this.food.push(f);
+        this.newFoodBoxes.push(f);
     }
 
     addPlayer(id, name, color) {
@@ -53,19 +58,23 @@ class Game {
             const player = this.players[id];
             player.segments.forEach(seg => {
                 if (Math.random() > 0.5) {
-                    this.food.push({
-                        id: Math.random().toString(36).substring(2, 9),
+                    const fId = Math.random().toString(36).substring(2, 9);
+                    const f = {
+                        id: fId,
                         x: seg.x,
                         y: seg.y,
                         value: 2
-                    });
+                    };
+                    this.food.push(f);
+                    this.newFoodBoxes.push(f);
                 }
             });
             delete this.players[id];
 
             // Limit total food to prevent lag
             while (this.food.length > 1000) {
-                this.food.shift();
+                const removed = this.food.shift();
+                this.eatenFoodIds.push(removed.id); // Notify clients to remove
             }
         }
     }
@@ -92,12 +101,15 @@ class Game {
                 // Drop food behind occasionally
                 if (Math.random() < 0.2) {
                     const tail = p.segments[p.segments.length - 1];
-                    this.food.push({
-                        id: Math.random().toString(36).substring(2, 9),
+                    const fId = Math.random().toString(36).substring(2, 9);
+                    const f = {
+                        id: fId,
                         x: tail.x,
                         y: tail.y,
                         value: 1
-                    });
+                    };
+                    this.food.push(f);
+                    this.newFoodBoxes.push(f);
                 }
             }
 
@@ -126,6 +138,7 @@ class Game {
                 const dist = Math.hypot(p.x - f.x, p.y - f.y);
                 if (dist < p.radius + 5) { // Food radius approx 5
                     p.score += f.value;
+                    this.eatenFoodIds.push(f.id);
                     this.food.splice(i, 1);
                     this.addFood(); // respawn food
                 }
@@ -212,12 +225,14 @@ class Game {
     }
 
     getState() {
-        // In a real optimized game, we only send visible entities to each client
-        // For simplicity, we send all players and food here.
-        return {
+        const state = {
             players: this.players,
-            food: this.food
+            eatenFoodIds: [...this.eatenFoodIds],
+            newFoodBoxes: [...this.newFoodBoxes]
         };
+        this.eatenFoodIds = [];
+        this.newFoodBoxes = [];
+        return state;
     }
 }
 

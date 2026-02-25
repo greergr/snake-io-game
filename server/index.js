@@ -22,6 +22,7 @@ io.on('connection', (socket) => {
     socket.on('joinGame', (data) => {
         game.addPlayer(socket.id, data.name, data.color);
         socket.emit('init', { id: socket.id });
+        socket.emit('initFood', game.food); // Send all food only once
     });
 
     socket.on('input', (data) => {
@@ -42,7 +43,13 @@ setInterval(() => {
     // Create a compressed state to send over network
     const netState = {
         players: {},
-        food: fullState.food
+        eatenFood: fullState.eatenFoodIds,
+        newFood: fullState.newFoodBoxes.map(f => ({
+            id: f.id,
+            x: Math.round(f.x),
+            y: Math.round(f.y),
+            value: f.value
+        }))
     };
 
     // Only send essential fields to save bandwidth
@@ -54,14 +61,14 @@ setInterval(() => {
             color: p.color,
             x: Math.round(p.x * 10) / 10,
             y: Math.round(p.y * 10) / 10,
-            angle: Math.round(p.angle * 100) / 100,
+            angle: Math.round(p.angle * 10) / 10,
             score: Math.round(p.score),
             radius: Math.round(p.radius * 10) / 10,
             isBoosting: p.isBoosting,
             isLeader: p.isLeader,
             segments: p.segments.map(seg => ({
-                x: Math.round(seg.x * 10) / 10,
-                y: Math.round(seg.y * 10) / 10
+                x: Math.round(seg.x),
+                y: Math.round(seg.y)
             }))
         };
     }

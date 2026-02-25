@@ -60,6 +60,10 @@ socket.on('init', (data) => {
     myId = data.id;
 });
 
+socket.on('initFood', (foodArray) => {
+    gameState.food = foodArray;
+});
+
 socket.on('gameState', (state) => {
     // Check if I died
     if (isPlaying && myId && !state.players[myId]) {
@@ -76,14 +80,22 @@ socket.on('gameState', (state) => {
         }
     }
 
+    // Handle Food Sync: Remove Eaten, Add New
+    if (state.eatenFood && state.eatenFood.length > 0) {
+        state.eatenFood.forEach(id => {
+            const ix = gameState.food.findIndex(f => f.id === id);
+            if (ix !== -1) gameState.food.splice(ix, 1);
+        });
+    }
+    if (state.newFood && state.newFood.length > 0) {
+        gameState.food.push(...state.newFood);
+    }
+
     // Prepare for interpolation
     if (Object.keys(gameState.players).length === 0) {
-        gameState = JSON.parse(JSON.stringify(state)); // Full clone first time
+        gameState.players = JSON.parse(JSON.stringify(state.players)); // Full clone first time
     }
-    targetState = state;
-
-    // Update food immediately since it doesn't lerp
-    gameState.food = state.food;
+    targetState.players = state.players;
 
     updateUI();
 });
